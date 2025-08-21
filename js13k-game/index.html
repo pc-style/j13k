@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum Particle Collider</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:monospace;overflow:hidden;cursor:crosshair}
+#c{display:block;background:radial-gradient(circle at center,#1a1a2e 0%,#16213e 50%,#0f3460 100%)}
+#ui{position:fixed;top:10px;left:10px;z-index:100;font-size:12px;text-shadow:0 0 5px #0ff}
+#ui div{margin:5px 0;padding:5px;background:rgba(0,0,0,0.7);border-radius:3px}
+#ui button{background:#0ff;color:#000;border:none;padding:5px 10px;margin:2px;border-radius:3px;cursor:pointer;font-family:monospace}
+#ui button:hover{background:#fff}
+#ui button:active{transform:scale(0.95)}
+#ui input{background:#000;color:#0ff;border:1px solid #0ff;padding:3px;width:60px;font-family:monospace}
+#ui input:focus{outline:none;box-shadow:0 0 10px #0ff}
+#info{position:fixed;bottom:10px;right:10px;z-index:100;font-size:10px;text-align:right;text-shadow:0 0 5px #0ff}
+#info div{margin:2px 0;padding:3px;background:rgba(0,0,0,0.7);border-radius:3px}
+#level{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;font-size:24px;text-align:center;text-shadow:0 0 20px #0ff;display:none}
+#level.show{display:block}
+#level h2{margin-bottom:20px;color:#0ff}
+#level p{margin:10px 0;color:#fff}
+#level button{background:#0ff;color:#000;border:none;padding:10px 20px;margin:10px;border-radius:5px;cursor:pointer;font-family:monospace;font-size:16px}
+#level button:hover{background:#fff}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+<div>Level: <span id="levelNum">1</span></div>
+<div>Particles: <span id="particleCount">0</span></div>
+<div>Energy: <span id="energy">100</span></div>
+<div>Dimension: <span id="dimension">3D</span></div>
+<div>
+<button id="toggleDim">Toggle Dimension</button>
+<button id="reset">Reset Level</button>
+</div>
+<div>
+<label>Gravity: <input type="range" id="gravity" min="0" max="2" step="0.1" value="0.5"></label>
+</div>
+<div>
+<label>Time Scale: <input type="range" id="timeScale" min="0.1" max="3" step="0.1" value="1"></label>
+</div>
+</div>
+<div id="info">
+<div>WASD: Move Camera</div>
+<div>Mouse: Rotate View</div>
+<div>Space: Toggle Pause</div>
+<div>R: Reset Camera</div>
+<div>Q: Quantum Jump</div>
+</div>
+<div id="level">
+<h2>Level Complete!</h2>
+<p id="levelStats"></p>
+<button id="nextLevel">Next Level</button>
+<button id="restart">Restart</button>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
