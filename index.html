@@ -1,0 +1,147 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Orbital Resonance</title><style>body{margin:0;padding:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:monospace}canvas{border:1px solid #333;cursor:crosshair}#ui{position:absolute;color:#fff;top:10px;left:10px;font-size:14px}</style></head><body><canvas id="c" width="800" height="600"></canvas><div id="ui"><div>Level: <span id="level">1</span></div><div>Score: <span id="score">0</span></div><div>Targets: <span id="targets">0</span></div></div><script>
+const c=document.getElementById('c'),ctx=c.getContext('2d'),W=800,H=600;
+let g={s:'playing',l:1,score:0,t:0,time:0},ship={x:100,y:300,vx:0,vy:0,a:0,th:false,sz:3},bodies=[],targets=[],particles=[],keys={},mouse={x:0,y:0,d:false};
+
+function init(l){
+bodies=[];targets=[];particles=[];
+const n=Math.min(2+Math.floor(l/2),6);
+for(let i=0;i<n;i++){
+const a=(i/n)*Math.PI*2,d=150+Math.random()*200;
+bodies.push({x:W/2+Math.cos(a)*d,y:H/2+Math.sin(a)*d,m:200+Math.random()*300,r:15+Math.random()*10});
+}
+const nt=3+l;g.t=nt;
+for(let i=0;i<nt;i++){
+let x,y,v=false,at=0;
+do{
+x=Math.random()*(W-40)+20;y=Math.random()*(H-40)+20;v=true;
+for(let b of bodies){
+const dx=x-b.x,dy=y-b.y,dt=Math.sqrt(dx*dx+dy*dy);
+if(dt<b.r+30){v=false;break;}
+}
+at++;
+}while(!v&&at<100);
+if(v)targets.push({x,y,c:false});
+}
+ship.x=100;ship.y=300;ship.vx=0;ship.vy=0;ship.a=0;
+}
+
+function updatePhysics(dt){
+let fx=0,fy=0;
+for(let b of bodies){
+const dx=b.x-ship.x,dy=b.y-ship.y,d=Math.sqrt(dx*dx+dy*dy);
+if(d>b.r){
+const f=b.m/(d*d)*0.1;
+fx+=f*dx/d;fy+=f*dy/d;
+}else{
+g.s='lost';createExplosion(ship.x,ship.y,15);
+}
+}
+if(ship.th){
+const tp=50;
+fx+=Math.cos(ship.a)*tp;fy+=Math.sin(ship.a)*tp;
+createThrustParticles();
+}
+ship.vx+=fx*dt;ship.vy+=fy*dt;ship.vx*=0.999;ship.vy*=0.999;
+ship.x+=ship.vx*dt;ship.y+=ship.vy*dt;
+if(ship.x<0)ship.x=W;if(ship.x>W)ship.x=0;if(ship.y<0)ship.y=H;if(ship.y>H)ship.y=0;
+for(let t of targets){
+if(!t.c){
+const dx=ship.x-t.x,dy=ship.y-t.y;
+if(Math.sqrt(dx*dx+dy*dy)<15){
+t.c=true;g.score+=100*g.l;g.t--;createCollectEffect(t.x,t.y);
+if(g.t<=0){g.l++;setTimeout(()=>init(g.l),1000);}
+}
+}
+}
+}
+
+function createExplosion(x,y,cnt){
+for(let i=0;i<cnt;i++){
+particles.push({x,y,vx:(Math.random()-0.5)*200,vy:(Math.random()-0.5)*200,life:1,decay:0.02,color:`hsl(${Math.random()*60},100%,60%)`});
+}
+}
+
+function createCollectEffect(x,y){
+for(let i=0;i<8;i++){
+particles.push({x,y,vx:(Math.random()-0.5)*100,vy:(Math.random()-0.5)*100,life:1,decay:0.03,color:'#0f0'});
+}
+}
+
+function createThrustParticles(){
+const tx=ship.x-Math.cos(ship.a)*8,ty=ship.y-Math.sin(ship.a)*8;
+particles.push({x:tx+(Math.random()-0.5)*4,y:ty+(Math.random()-0.5)*4,vx:-Math.cos(ship.a)*50+(Math.random()-0.5)*30,vy:-Math.sin(ship.a)*50+(Math.random()-0.5)*30,life:0.5,decay:0.04,color:'#f80'});
+}
+
+function updateParticles(dt){
+for(let i=particles.length-1;i>=0;i--){
+const p=particles[i];
+p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=p.decay;
+if(p.life<=0)particles.splice(i,1);
+}
+}
+
+function render(){
+ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+ctx.fillStyle='#444';
+for(let i=0;i<50;i++){
+const x=(i*123)%W,y=(i*456+g.time*0.1)%H;
+ctx.fillRect(x,y,1,1);
+}
+for(let b of bodies){
+const grad=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+grad.addColorStop(0,'#833');grad.addColorStop(1,'#311');
+ctx.fillStyle=grad;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();
+ctx.strokeStyle='#822';ctx.globalAlpha=0.3;ctx.beginPath();ctx.arc(b.x,b.y,b.r+20,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+}
+for(let t of targets){
+if(!t.c){
+ctx.fillStyle='#0f0';ctx.beginPath();ctx.arc(t.x,t.y,5,0,Math.PI*2);ctx.fill();
+const pulse=1+Math.sin(g.time*0.01)*0.3;
+ctx.strokeStyle='#0f0';ctx.globalAlpha=0.5;ctx.beginPath();ctx.arc(t.x,t.y,8*pulse,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+}
+}
+for(let p of particles){
+ctx.fillStyle=p.color;ctx.globalAlpha=p.life;ctx.fillRect(p.x-1,p.y-1,2,2);ctx.globalAlpha=1;
+}
+if(g.s==='playing'){
+ctx.save();ctx.translate(ship.x,ship.y);ctx.rotate(ship.a);
+ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(-4,-3);ctx.lineTo(-4,3);ctx.closePath();ctx.fill();
+ctx.restore();
+ctx.strokeStyle='#888';ctx.globalAlpha=0.5;ctx.beginPath();ctx.arc(ship.x,ship.y,12,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+}
+document.getElementById('level').textContent=g.l;
+document.getElementById('score').textContent=g.score;
+document.getElementById('targets').textContent=g.t;
+if(g.s==='lost'){
+ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#f00';ctx.font='48px monospace';ctx.textAlign='center';
+ctx.fillText('SHIP DESTROYED',W/2,H/2);ctx.font='24px monospace';ctx.fillText('Press R to restart',W/2,H/2+40);
+}
+}
+
+document.addEventListener('keydown',e=>{
+keys[e.key.toLowerCase()]=true;
+if(e.key.toLowerCase()==='r'&&g.s==='lost'){g.s='playing';g.l=1;g.score=0;init(1);}
+});
+document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+c.addEventListener('mousemove',e=>{
+const rect=c.getBoundingClientRect();
+mouse.x=e.clientX-rect.left;mouse.y=e.clientY-rect.top;
+});
+c.addEventListener('mousedown',()=>mouse.d=true);
+c.addEventListener('mouseup',()=>mouse.d=false);
+
+let lastTime=0;
+function gameLoop(timestamp){
+const dt=Math.min((timestamp-lastTime)/1000,0.016);
+lastTime=timestamp;g.time=timestamp;
+if(g.s==='playing'){
+if(keys['a']||keys['arrowleft'])ship.a-=3*dt;
+if(keys['d']||keys['arrowright'])ship.a+=3*dt;
+ship.th=keys['w']||keys['arrowup']||keys[' ']||mouse.d;
+if(mouse.x!==0||mouse.y!==0)ship.a=Math.atan2(mouse.y-ship.y,mouse.x-ship.x);
+updatePhysics(dt);updateParticles(dt);
+}
+render();requestAnimationFrame(gameLoop);
+}
+init(1);requestAnimationFrame(gameLoop);
+</script></body></html>
